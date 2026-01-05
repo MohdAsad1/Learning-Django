@@ -1,0 +1,58 @@
+Django is a high-level Python web framework that helps developers build secure, scalable, and maintainable web applications quickly. Here are the basics you need to know:
+
+✅ 1. What is Django?
+
+Django is an open-source web framework based on Python.
+It follows the MVT (Model-View-Template) architecture.
+Designed for rapid development and clean, pragmatic design.
+
+
+✅ 2. Key Features
+
+ORM (Object-Relational Mapping): Interact with databases using Python instead of SQL.
+Built-in Admin Panel: Auto-generated interface for managing data.
+Security: Protects against common attacks like SQL injection, CSRF, XSS.
+Scalability: Used by big companies like Instagram, Pinterest.
+DRY Principle: “Don’t Repeat Yourself” – encourages reusable code.
+
+
+✅ 3. Django Architecture (MVT)
+
+Model: Handles database (tables, queries).
+View: Business logic (Python functions/classes).
+Template: HTML/CSS for UI.
+
+
+✅ 4. Basic Workflow
+
+Install Django:
+pip install django
+
+Create a Project:
+django-admin startproject myproject
+
+Run Server:
+python manage.py runserver
+
+Create an App:
+python manage.py startapp myapp
+
+Define Models: (in models.py)
+from django.db import models
+class Student(models.Model):
+  name = models.CharField(max_length=100)
+  age = models.IntegerField()
+
+Apply Migrations:
+python manage.py makemigrations
+python manage.py migrate
+
+Create Views & Templates: (in views.py and templates/ folder)
+Map URLs: (in urls.py)
+
+
+✅ 5. Common Commands
+
+python manage.py createsuperuser → Create admin user.
+python manage.py shell → Open Django shell.
+python manage.py collectstatic → Collect static files.
