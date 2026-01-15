@@ -49,10 +49,104 @@ python manage.py migrate
 
 Create Views & Templates: (in views.py and templates/ folder)
 Map URLs: (in urls.py)
+=========================================================================================================================================================
+ASGI And WSGI
+
+In Django, both asgi.py and wsgi.py are entry points for running your application, 
+but they serve different purposes depending on whether your app is asynchronous or synchronous.
+
+1. WSGI (Web Server Gateway Interface)
+
+File: wsgi.py
+Purpose: Standard interface between synchronous Python web apps and web servers.
+Nature: Synchronous — handles one request at a time per worker/thread.
+Concurrency: Achieved via multiple processes or threads.
+Use Case: Traditional Django apps without async features.
+Server Examples: Gunicorn, uWSGI, mod_wsgi (Apache).
+
+Example (wsgi.py):
+import os
+from django.core.wsgi import get_wsgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
+application = get_wsgi_application()
 
 
-✅ 5. Common Commands
+2. ASGI (Asynchronous Server Gateway Interface)
 
-python manage.py createsuperuser → Create admin user.
-python manage.py shell → Open Django shell.
-python manage.py collectstatic → Collect static files.
+File: asgi.py
+Purpose: Standard interface for asynchronous Python web apps and servers.
+Nature: Asynchronous + Synchronous — can handle both types of requests.
+Concurrency: Handles multiple requests concurrently without blocking.
+Use Case: Real-time features (WebSockets, long polling, async views).
+Server Examples: Uvicorn, Daphne, Hypercorn.
+
+Example (asgi.py):
+import os
+from django.core.asgi import get_asgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
+application = get_asgi_application()
+---------------------------------------------------------------------------------------------------------------------
+
+1. makemigrations
+
+Purpose: Detects changes in your models.py and creates migration files (Python scripts) that describe those changes.
+What it does:
+
+Compares your current models with the last applied migration.
+Generates migration files inside the migrations/ folder of each app.
+These files contain instructions for how to modify the database schema (e.g., create tables, add/remove fields).
+
+When to use:
+After you change your models (add a field, delete a model, rename a field, etc.).
+Example:Bashpython manage.py makemigrations
+
+Output might be:Migrations for 'blog':
+  blog/migrations/0002_post_created_at.py
+    - Add field created_at to post
+
+2. migrate
+
+Purpose: Applies (or unapplies) migration files to the actual database.
+What it does:
+
+Reads migration files.
+Executes the SQL commands needed to update the database schema.
+Keeps track of applied migrations in the django_migrations table.
+
+When to use:
+After running makemigrations (or when pulling migrations from another developer).
+Example:Bashpython manage.py migrate
+
+Output might be:Applying blog.0002_post_created_at... OK
+
+Key Difference Table
+
+Command
+Function
+Affects Database?
+Typical Usage Order
+
+makemigrations
+Creates migration files from model changes
+❌ No
+First
+
+migrate
+Applies migration files to the database
+✅ Yes
+Second
+
+💡 In short:
+
+makemigrations → "Prepare the migration plan" (writes Python migration scripts).
+migrate → "Execute the migration plan" (updates the database).
+
+---------------------------------------------------------------------------------------------------------------------
+
+there are two major tags in our migration :- 
+Dependiencies - are the dependencies on previous migrations
+and Operations - what are the operations our migration is duing
+
+
