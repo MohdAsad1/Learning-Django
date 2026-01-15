@@ -149,4 +149,65 @@ there are two major tags in our migration :-
 Dependiencies - are the dependencies on previous migrations
 and Operations - what are the operations our migration is duing
 
+==================================================================================================================
 
+CRUD operations in Django 
+
+(Create, Read, Update, Delete) are fundamental techniques for managing persistent data using Django’s Object-Relational Mapper (ORM). 
+These operations can be implemented using Django Models, ModelForms, and views (either Function-Based Views or Class-Based Views) to interact with databases.  
+Core Components : -
+
+• Models (): Define the structure of the data. 
+• Forms (): Handle user input, validation, and saving data. 
+• Views (): Handle logic for processing data. 
+• Templates (): User interface for displaying and submitting data. [1, 2, 3, 5, 6]  
+
+1. Create (Insert Data) [7, 8]  
+Data is created by instantiating a model class and calling  or by using a . 
+
+• Using : save()
+new_item = MyModel(field1="data", field2="more data")
+new_item.save()
+
+• Using : Modelform
+if request.method == 'POST':
+    form = MyModelForm(request.POST)
+    if form.is_valid():
+        form.save() # Saves to database
+
+
+2. Read (Retrieve Data) 
+Data is retrieved using the Model Manager (), which allows filtering, fetching all records, or finding a single record. 
+
+• Retrieve All:  items = MyModel.objects.all()
+• Filter Records:  items = MyModel.objects.filter(field1="data")
+• Single Record:  item = MyModel.objects.get(id=1)
+
+-> the difference b/w get and filter is if no object is found in get it will through an error where as in filter through empty list.
+
+3. Update (Modify Data) 
+Updating involves retrieving an existing record, modifying its attributes, and saving it back to the database. 
+# views.py
+item = MyModel.objects.get(id=1)
+item.field1 = "Updated Data"
+item.save()
+
+4. Delete (Remove Data) 
+Data is deleted by calling the  method on a retrieved model instance. 
+# views.py
+item = MyModel.objects.get(id=1)
+item.delete()
+======================================================================================================================
+Basic Implementation Workflow :-
+1 - Define Model: Create a model in app/models.py.
+2 - Run Migrations: Execute python manage.py makemigrations and python manage.py migrate to create database tables.
+3 - Create ModelForm: Create a forms.py using forms.ModelForm.
+4 - Create Views: Write view functions in views.py to handle GET (display form/data) and POST (submit data) requests.
+5 - Configure URLs: Add paths in urls.py for each operation.
+6 - Build Templates: Create HTML templates for rendering forms and lists. 
+
+========================================================================================================================
+Alternative Methods
+1 - Django Admin: Provides a built-in UI for CRUD without writing views.
+2 - Class-Based Views (CBVs): Use ListView, DetailView, CreateView, UpdateView, and DeleteView for faster development.
+3 - Django REST Framework (DRF): Used for performing CRUD via API endpoints. 
