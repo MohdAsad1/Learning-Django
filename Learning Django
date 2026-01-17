@@ -183,7 +183,7 @@ Data is retrieved using the Model Manager (), which allows filtering, fetching a
 • Filter Records:  items = MyModel.objects.filter(field1="data")
 • Single Record:  item = MyModel.objects.get(id=1)
 
--> the difference b/w get and filter is if no object is found in get it will through an error where as in filter through empty list.
+-> the difference b/w get and filter is if no object is found in get it will through an error where as in filter through empty queryset.
 
 3. Update (Modify Data) 
 Updating involves retrieving an existing record, modifying its attributes, and saving it back to the database. 
@@ -191,6 +191,10 @@ Updating involves retrieving an existing record, modifying its attributes, and s
 item = MyModel.objects.get(id=1)
 item.field1 = "Updated Data"
 item.save()
+
+OR 
+
+item = MyMdel.objects.get(id =1).update(field1 = "Updated Data")
 
 4. Delete (Remove Data) 
 Data is deleted by calling the  method on a retrieved model instance. 
@@ -211,3 +215,218 @@ Alternative Methods
 1 - Django Admin: Provides a built-in UI for CRUD without writing views.
 2 - Class-Based Views (CBVs): Use ListView, DetailView, CreateView, UpdateView, and DeleteView for faster development.
 3 - Django REST Framework (DRF): Used for performing CRUD via API endpoints. 
+
+========================================================================================================================
+__icontains  -> will check if the given value is present in queryset
+========================================================================================================================
+Authentication in web requests¶
+Django uses sessions and middleware to hook the authentication system into request objects.
+
+These provide a request.user attribute and a request.auser async method on every request which represents the current user.
+If the current user has not logged in, this attribute will be set to an instance of AnonymousUser, otherwise it will be an instance of User.
+if request.user.is_authenticated:
+    # Do something for authenticated users.
+    ...
+else:
+    # Do something for anonymous users.
+    ...
+
+==========================================================================================================================
+The login_required decorator¶
+login_required(redirect_field_name='next', login_url=None)[source]¶
+As a shortcut, you can use the convenient login_required() decorator:
+
+from django.contrib.auth.decorators import login_required
+
+
+@login_required
+def my_view(request): ...
+
+===========================================================================================================================
+Django User Model
+
+Django’s User model is the core of its authentication system, storing essential user information and permissions. 
+By default, it’s provided via django.contrib.auth.models.User, but Django also supports custom user models for flexibility.
+
+from django.contrib.auth.models import User
+class Profile(models.Model):
+user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+==========================================================================================================================
+Custom User Model
+If you need extra fields (e.g., phone number, profile picture), you should create a custom user model using AbstractUser or AbstractBaseUser.
+
+Example with AbstractUser:
+
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+class CustomUser(AbstractUser):
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
+
+    def __str__(self):
+        return self.username
+
+==========================================================================================================================
+queryset = Model.objects.all().order_by(value)[0:200]
+
+it will give the first 200 va;ue in the soted accending order, if i want decending -->  order_by(-value)
+=========================================================================================================================
+queryset = Model.objects.all().order_by(value__gte = 50)[0:200]
+
+give the queryset whose value is greterthen 50 - use __lte for lower then 
+=========================================================================================================================
+ForeignKey in Django
+used to define a many-to-one relationship between two models. 
+It allows multiple instances of one model to be associated with a single instance of another model, such as linking comments to a blog post or orders to a customer.
+
+from django.db import models
+
+class Post(models.Model):
+title = models.CharField(max_length=200)
+content = models.TextField()
+published_at = models.DateTimeField(auto_now_add=True)
+
+def __str__(self):
+return self.title
+
+class Comment(models.Model):
+post = models.ForeignKey(Post, on_delete=models.CASCADE) # ForeignKey relationship
+author = models.CharField(max_length=100)
+text = models.TextField()
+created_at = models.DateTimeField(auto_now_add=True)
+
+def __str__(self):
+return f"Comment by {self.author}"
+==============================================================================================================================
+select_related() is a QuerySet method used to optimize database queries by performing a SQL JOIN and fetching related objects in a single query instead of multiple queries.
+It is mainly used for ForeignKey and OneToOneField relationships.
+
+Normally, when you access a related object, Django performs a lazy lookup (extra query).
+With select_related(), Django fetches the related object at the same time as the main object.
+
+Example Without select_related()
+# models.py
+from django.db import models
+
+class Author(models.Model):
+    name = models.CharField(max_length=100)
+
+class Book(models.Model):
+    title = models.CharField(max_length=100)
+    author = models.ForeignKey(Author, on_delete=models.CASCADE)
+
+# views.py
+books = Book.objects.all()
+for book in books:
+    print(book.title, book.author.name)  # Causes N+1 queries
+Problem:
+
+1 query to get all books
+1 query per book to get its author → N+1 queries (slow for large datasets)
+Example With select_related()
+books = Book.objects.select_related('author').all()
+for book in books:
+    print(book.title, book.author.name)  # Only 1 query
+Benefit:
+
+Single SQL query with a JOIN to fetch books and authors together.
+Multiple Relationships
+Python
+
+Copy code
+books = Book.objects.select_related('author__profile').all()
+This will join across multiple related models.
+
+When to Use
+✅ Use select_related() for:
+
+ForeignKey
+OneToOneField
+When you know you'll need related object data immediately.
+=========================================================================================================================
+select_related VS prefetch_related 
+both are queryset optimization methods used to reduce the N+1 query problem when accessing related objects — but they work differently.
+
+1. select_related
+Purpose: Optimizes single-valued relationships (ForeignKey, OneToOneField).
+How it works: Uses SQL JOIN to fetch related objects in the same query.
+When to use: When you know you'll need related object data for each row and the relationship is one-to-one or many-to-one.
+Pros:
+Only one SQL query.
+Faster for single-valued relationships.
+Cons:
+Can fetch more data than needed if related tables are large.
+Not suitable for reverse/many-to-many relationships.
+Example:
+
+Python
+
+Copy code
+# models.py
+class Author(models.Model):
+    name = models.CharField(max_length=100)
+
+class Book(models.Model):
+    title = models.CharField(max_length=100)
+    author = models.ForeignKey(Author, on_delete=models.CASCADE)
+
+# views.py
+books = Book.objects.select_related('author')  # Single JOIN query
+for book in books:
+    print(book.title, book.author.name)
+SQL generated:
+SELECT book.id, book.title, author.id, author.name
+FROM book
+INNER JOIN author ON book.author_id = author.id;
+
+2. prefetch_related
+Purpose: Optimizes multi-valued relationships (ManyToManyField, reverse ForeignKey).
+How it works: Runs two separate queries — one for the main model, one for related objects — and joins them in Python.
+When to use: When you need to fetch lists of related objects for each main object.
+Pros:
+Efficient for many-to-many or reverse relationships.
+Avoids huge JOINs.
+Cons:
+Two queries instead of one (but still much faster than N+1 queries).
+Example:
+
+# models.py
+class Author(models.Model):
+    name = models.CharField(max_length=100)
+
+class Book(models.Model):
+    title = models.CharField(max_length=100)
+    author = models.ForeignKey(Author, on_delete=models.CASCADE)
+
+# views.py
+authors = Author.objects.prefetch_related('book_set')  # Two queries
+for author in authors:
+    print(author.name, [book.title for book in author.book_set.all()])
+SQL generated:
+
+Sql
+
+Copy code
+-- First query
+SELECT id, name FROM author;
+
+-- Second query
+SELECT id, title, author_id FROM book
+WHERE author_id IN (list_of_author_ids);
+Key Differences Table
+Feature	select_related	prefetch_related
+Relationship type	Single-valued (FK, OneToOne)	Multi-valued (M2M, reverse FK)
+SQL queries	1 (JOIN)	2+ (batched)
+Data join location	Database	Python
+Best for	Single related object per row	Multiple related objects per row
+✅ Rule of Thumb:
+
+Use select_related for ForeignKey / OneToOne (forward lookups).
+Use prefetch_related for ManyToMany / reverse ForeignKey (backward lookups).
+You can combine them for complex queries:
+Python
+
+Copy code
+Book.objects.select_related('author').prefetch_related('categories')
