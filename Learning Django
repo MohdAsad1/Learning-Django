@@ -430,3 +430,12 @@ Python
 
 Copy code
 Book.objects.select_related('author').prefetch_related('categories')
+==========================================================================================================
+Django Q | 
+Q objects are used to build complex queries with OR, AND, and NOT conditions that go beyond the default .filter() chaining (which uses implicit AND).
+
+from django.db.models import Q
+# Products that are either in 'Electronics' category OR priced below 500
+products = Product.objects.filter(
+    Q(category='Electronics') | Q(price__lt=500)
+
