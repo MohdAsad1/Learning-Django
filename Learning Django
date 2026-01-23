@@ -430,8 +430,56 @@ Python
 
 Copy code
 Book.objects.select_related('author').prefetch_related('categories')
+================================================================================================================
+Aggregate vs Annotate in Django
+
+aggregate() computes summary values across the entire queryset and returns a dictionary of results. It’s a terminal clause, meaning it ends the queryset chain and immediately hits the database.
+
+annotate() computes values per object in the queryset and returns a queryset with extra calculated fields added to each object. It’s not terminal, so you can chain further filters or annotations.
+
+Example Models
+
+from django.db import models
+
+class Author(models.Model):
+name = models.CharField(max_length=100)
+
+class Book(models.Model):
+title = models.CharField(max_length=100)
+author = models.ForeignKey(Author, on_delete=models.CASCADE)
+price = models.DecimalField(max_digits=5, decimal_places=2)
+Copy
+
+Using aggregate() – Global Summary
+
+from django.db.models import Avg, Count, Sum
+
+summary = Book.objects.aggregate(
+total_books=Count('id'),
+average_price=Avg('price'),
+total_price=Sum('price')
+)
+print(summary)
+# Output: {'total_books': 4, 'average_price': 18.81, 'total_price': 75.24}
+Copy
+Here, the result is one dictionary summarizing all books.
+
+Using annotate() – Per Object Calculation
+
+from django.db.models import Count, Avg
+
+author_summary = Author.objects.annotate(
+total_books=Count('book'),
+average_price=Avg('book__price')
+)
+
+for author in author_summary:
+print(f"{author.name} - Books: {author.total_books}, Avg Price: {author.average_price}")
+# John Doe - Books: 2, Avg Price: 22.24
+# Jane Smith - Books: 2, Avg Price: 15.38
+
 ==========================================================================================================
-Django Q | 
+Django Q | Query
 Q objects are used to build complex queries with OR, AND, and NOT conditions that go beyond the default .filter() chaining (which uses implicit AND).
 
 from django.db.models import Q
