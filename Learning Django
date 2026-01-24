@@ -487,3 +487,16 @@ from django.db.models import Q
 products = Product.objects.filter(
     Q(category='Electronics') | Q(price__lt=500)
 
+=============================================================================================================
+the Custom User Model and Manager
+
+You have two primary options for the base class:
+
+1 - AbstractUser: Use this if you want to keep most of the default user fields (username, first name, last name, etc.) 
+              but add a few custom fields or change the unique identifier to an email.
+2 - AbstractBaseUser: Use this if you want to build a user model from scratch, 
+              requiring you to define all authentication-related fields and methods yourself. 
+
+The following example uses AbstractUser to use email as the unique identifier. 
+In accounts/models.py, define your manager and model: 
+Defining a custom user model involves creating a manager for user creation and a model that inherits from either AbstractUser or AbstractBaseUser. An example using AbstractUser is provided in the source
