@@ -631,3 +631,4 @@ Security (e.g., CSRF)
 Request/response modification
 
 In short, middleware = reusable components that process requests and responses globally.
+
