@@ -500,3 +500,134 @@ You have two primary options for the base class:
 The following example uses AbstractUser to use email as the unique identifier. 
 In accounts/models.py, define your manager and model: 
 Defining a custom user model involves creating a manager for user creation and a model that inherits from either AbstractUser or AbstractBaseUser. An example using AbstractUser is provided in the source
+=====================================================================================================================
+
+Model manager in Django
+
+A Django model manager is the interface through which database query operations are provided to Django models. 
+It is used to retrieve instances from the database and acts as a bridge between your Python code and the database. 
+Every model has at least one manager, which by default is named objects. 
+
+Key Concepts
+Interface to the Database: The manager provides methods like all(), filter(), get(), and create() for performing database operations, abstracting the need to write raw SQL queries.
+Accessible via Class, not Instance: Managers are accessed through the model class (e.g., Book.objects.all()), not a model instance (e.g., my_book_instance.objects will raise an error). This enforces a separation between "table-level" (manager) and "row-level" (model instance) operations.
+Default Manager: If you don't define a custom manager, Django automatically provides a default manager named objects. 
+
+Custom Managers
+You can customize managers for two primary reasons: 
+To add extra "table-level" functionality/methods to your models.
+To modify the initial QuerySet the manager returns. 
+
+1. Adding Extra Manager Methods
+This is the preferred way to add common query functionality that doesn't belong on a single model instance. 
+python
+from django.db import models
+
+class DahlBookManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(author="Roald Dahl")
+    
+    def title_count(self, keyword):
+        return self.filter(title__icontains=keyword).count()
+
+class Book(models.Model):
+    title = models.CharField(max_length=100)
+    author = models.CharField(max_length=50)
+    objects = models.Manager() # The default manager
+    dahl_objects = DahlBookManager() # The Dahl-specific manager
+
+    def __str__(self):
+        return self.title
+Usage:
+Book.objects.all() returns all books.
+Book.dahl_objects.all() returns only books by Roald Dahl.
+Book.dahl_objects.title_count('Matilda') returns the count of matching titles. 
+
+2. Modifying the Initial QuerySet
+By overriding the get_queryset() method, you can change the base QuerySet that the manager uses. This is often used for "soft deletion" or multi-tenancy. 
+python
+from django.db import models
+
+class ActiveEmployeeManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_active=True)
+
+class Employee(models.Model):
+    name = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=True)
+    
+    objects = models.Manager() # Default manager, includes all employees
+    active_employees = ActiveEmployeeManager() # Custom manager, only active employees
+Usage:
+Employee.objects.all() returns all employees, active or inactive.
+Employee.active_employees.all() returns only active employees. 
+
+===============================================================================================
+
+Django Signals
+
+Django signals are a built-in signal dispatcher that allows decoupled applications to get notified when actions occur elsewhere in the framework, such as a model being saved or deleted. This mechanism follows the Observer design pattern, enabling different parts of an application to communicate without tight coupling. 
+Core Concepts
+Signals: These are the notifications sent when a specific event happens (e.g., post_save after a model instance is saved).
+Senders: The components (usually Django models or core parts of the framework) that dispatch the signals.
+Receivers (Handlers): Python functions or methods that "listen" for specific signals and execute custom logic when a signal is received.
+Connection: The process of linking a receiver function to a specific signal and sender, using signal.connect() or the @receiver decorator. 
+Built-in Signals
+Django provides several built-in signals for various parts of the framework: 
+Model Signals:
+pre_save / post_save: Sent before/after a model's save() method is called.
+pre_delete / post_delete: Sent before/after a model's delete() method is called.
+m2m_changed: Sent when a many-to-many field on a model is changed.
+Request/Response Signals:
+request_started / request_finished: Sent when Django starts/finishes processing an HTTP request.
+got_request_exception: Sent when an exception occurs during request processing.
+Management Signals:
+pre_migrate / post_migrate: Sent before/after the migrate command is run. 
+Implementation Example
+A common use case is creating a user profile automatically when a new user registers. 
+Define a receiver function (usually in a signals.py file within your app).
+python
+from django.db.models.signals import post_save
+from django.contrib.auth.models import User
+from django.dispatch import receiver
+from .models import Profile
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
+Ensure the signals are connected when your app is ready. In your app's apps.py file, override the ready() method:
+python
+from django.apps import AppConfig
+
+class MyAppConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'myapp'
+
+    def ready(self):
+        import myapp.signals # Import the signals module
+Update settings.py to use the custom AppConfig:
+python
+INSTALLED_APPS = [
+    # ...
+    'myapp.apps.MyAppConfig',
+    # ...
+]
+==================================================================================================
+
+Django Middleware (Short Description)
+Django middleware is a lightweight, low‑level system of hooks that sit between the request and response phases of a web app. Each middleware component can process a request before it reaches the view and a response before it goes back to the client.
+Think of it as a pipeline where each layer can add, modify, or block data.
+Common uses of middleware:
+
+Authentication
+Session handling
+Logging
+Security (e.g., CSRF)
+Request/response modification
+
+In short, middleware = reusable components that process requests and responses globally.
