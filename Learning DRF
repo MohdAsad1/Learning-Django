@@ -38,3 +38,167 @@ Basic Development Flow of a DRF Project
 4 - Create a serializers.py file in your app to define how model instances are converted to JSON and back.
 5 - Define a ViewSet in views.py to handle API requests and link it to your serializer.
 6 - Configure URL routing, typically using a router.register() call in your project's urls.py file to automatically map the ViewSet actions to URL endpoints. 
+===============================================================================================================
+GET - Read - Show all books / Show book 10
+POST - Create - Add new book
+PUT - Update (full) - Replace book 10 completely
+PATCH - Update (partial) - Change just book’s title
+DELETE - Delete - Remove book 10
+==================================================================================================================
+API View
+There are various types of api viewsets 
+
+1 - Function-Based Views with @api_view
+Quick and simple for small endpoints.
+
+# views.py
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+
+@api_view(['GET', 'POST'])
+def ping(request):
+    if request.method == 'GET':
+        return Response({'message': 'pong'})
+    elif request.method == 'POST':
+        data = request.data
+        return Response({'received': data}, status=status.HTTP_201_CREATED)
+-----------------------------------------------------------------------------------------------
+Class-Based Views with APIView
+Full control over the request/response cycle. You write HTTP method handlers (get, post, etc.).
+
+# views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, permissions
+
+class HelloView(APIView):
+    permission_classes = [permissions.AllowAny]  # or IsAuthenticated
+
+    def get(self, request):
+        user = request.user if request.user.is_authenticated else 'anonymous'
+        return Response({'hello': str(user)})
+
+    def post(self, request):
+        payload = request.data
+        return Response({'you_sent': payload}, status=status.HTTP_201_CREATED)
+------------------------------------------------------------------------------------------------
+
+Generic Class-Based Views (ListCreateAPIView, RetrieveUpdateDestroyAPIView, etc.)
+Faster CRUD with common behaviors built in.
+
+# serializers.py
+from rest_framework import serializers
+from .models import Book
+
+class BookSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Book
+        fields = '__all__'
+
+
+# views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, permissions
+from django.shortcuts import get_object_or_404
+from .models import Book
+from .serializers import BookSerializer
+
+class BookListCreate(APIView):
+    permission_classes = [permissions.IsAuthenticated]  # example
+    # You can also set authentication_classes, throttle_classes, parser_classes, renderer_classes
+
+    def get(self, request):
+        qs = Book.objects.all()
+        serializer = BookSerializer(qs, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = BookSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class BookDetail(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        book = get_object_or_404(Book, pk=pk)
+        serializer = BookSerializer(book)
+        return Response(serializer.data)
+
+    def put(self, request, pk):  # full update
+        book = get_object_or_404(Book, pk=pk)
+        serializer = BookSerializer(book, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk):  # partial update
+        book = get_object_or_404(Book, pk=pk)
+        serializer = BookSerializer(book, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        book = get_object_or_404(Book, pk=pk)
+        book.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+``
+-----------------------------------------------------------------------------------------
+Doing the CRUD with Generic(less Code)
+
+from rest_framework import generics, permissions
+from .models import Book
+from .serializers import BookSerializer
+
+class BookListCreateGeneric(generics.ListCreateAPIView):
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class BookDetailGeneric(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
+    permission_classes = [permissions.IsAuthenticated]
+``
+======================================================================================================
+Model Serializer 
+ModelSerializer is a shortcut class that automatically creates a serializer based on a Django model.
+✅ Auto-generates fields from your model
+✅ Built-in validation based on model field types, unique, max_length, blank, etc.
+✅ Auto-implements create() and update() (you can override)
+✅ Supports nested serializers, validators, read-only/write-only fields, and relationships
+
+we can apply validations in model serializers
+class BookSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Book
+        fields = ['id', 'title', 'title_upper', 'author', 'published']
+
+    def get_title_upper(self, obj):
+        return obj.title.upper()
+=======================================================================================================
+Depth keyword 
+is used in serializers where we want to show the value of the secound model 
+which is connected using the forign Key
+
+or we can get the data of secound serializer using another serializer and using in another serializer
+class ColorSerializer(serializers.ModelSerializer):
+ Class Meta:
+  model = Color
+  field = ['color_name']
+
+class
+PeopleSerializer(serializers.ModelSerializer):
+ color = ColorSerializer (many = True)
+ class Meta:
+  model = Person
+  fields = '_all_'
+  # depth = 1
