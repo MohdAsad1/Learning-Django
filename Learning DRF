@@ -83,6 +83,26 @@ class HelloView(APIView):
         payload = request.data
         return Response({'you_sent': payload}, status=status.HTTP_201_CREATED)
 ------------------------------------------------------------------------------------------------
+class PersonAPI(APIView):
+ def get(self, request):
+  objs = Person.objects.filter(color_isnull = False)
+  serializer = PeopleSerializer(objs, many = True )
+  return Response(serializer.data)
+
+ def post (self, request):
+  data = request.data
+  serializer - PeopleSerializer(data - data)
+  if serializer.is_valid():
+   serializer.save()
+   return Response(serializer.data)
+  return Response(serializer.errors)
+
+def put (self, request):
+  data = request.data
+  serializer = Peopleserializer(data = data)
+  if serializer.is_valid():
+   return Response (serializer.data)
+
 
 Generic Class-Based Views (ListCreateAPIView, RetrieveUpdateDestroyAPIView, etc.)
 Faster CRUD with common behaviors built in.
@@ -209,4 +229,22 @@ PeopleSerializer(serializers.ModelSerializer):
 -------------------------------------------------------------------------------
 we got full control while using secound serializer, 
 wahile in depth we got all the fields of the secound serializer
------------------------------------------------------------------------------------
+=====================================================================================================
+
+SerializerMethodField :-
+A read-only field that calculates its value by calling a method on the serializer class. 
+It is primarily used to add custom or derived data to your API response that isn't directly available as a model field. 
+
+from rest_framework import serializers
+
+class UserSerializer(serializers.ModelSerializer):
+    # 1. Define the field
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'full_name']
+
+    # 2. Implement the get_<field_name> method
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
