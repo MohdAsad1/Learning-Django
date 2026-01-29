@@ -185,11 +185,15 @@ class BookSerializer(serializers.ModelSerializer):
     def get_title_upper(self, obj):
         return obj.title.upper()
 =======================================================================================================
-Depth keyword 
+Q - How to serialize the forigne key data in DRF????
+
+1 - Depth keyword 
 is used in serializers where we want to show the value of the secound model 
 which is connected using the forign Key
 
+2 - Another serializer
 or we can get the data of secound serializer using another serializer and using in another serializer
+
 class ColorSerializer(serializers.ModelSerializer):
  Class Meta:
   model = Color
@@ -202,3 +206,7 @@ PeopleSerializer(serializers.ModelSerializer):
   model = Person
   fields = '_all_'
   # depth = 1
+-------------------------------------------------------------------------------
+we got full control while using secound serializer, 
+wahile in depth we got all the fields of the secound serializer
+-----------------------------------------------------------------------------------
