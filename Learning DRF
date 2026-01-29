@@ -83,6 +83,20 @@ class HelloView(APIView):
         payload = request.data
         return Response({'you_sent': payload}, status=status.HTTP_201_CREATED)
 ------------------------------------------------------------------------------------------------
+
+Generic Class-Based Views (ListCreateAPIView, RetrieveUpdateDestroyAPIView, etc.)
+Faster CRUD with common behaviors built in.
+
+# serializers.py
+from rest_framework import serializers
+from .models import Book
+
+class BookSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Book
+        fields = '__all__'
+
+# Views.py
 class PersonAPI(APIView):
  def get(self, request):
   objs = Person.objects.filter(color_isnull = False)
@@ -101,74 +115,7 @@ def put (self, request):
   data = request.data
   serializer = Peopleserializer(data = data)
   if serializer.is_valid():
-   return Response (serializer.data)
-
-
-Generic Class-Based Views (ListCreateAPIView, RetrieveUpdateDestroyAPIView, etc.)
-Faster CRUD with common behaviors built in.
-
-# serializers.py
-from rest_framework import serializers
-from .models import Book
-
-class BookSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Book
-        fields = '__all__'
-
-
-# views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, permissions
-from django.shortcuts import get_object_or_404
-from .models import Book
-from .serializers import BookSerializer
-
-class BookListCreate(APIView):
-    permission_classes = [permissions.IsAuthenticated]  # example
-    # You can also set authentication_classes, throttle_classes, parser_classes, renderer_classes
-
-    def get(self, request):
-        qs = Book.objects.all()
-        serializer = BookSerializer(qs, many=True)
-        return Response(serializer.data)
-
-    def post(self, request):
-        serializer = BookSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class BookDetail(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, pk):
-        book = get_object_or_404(Book, pk=pk)
-        serializer = BookSerializer(book)
-        return Response(serializer.data)
-
-    def put(self, request, pk):  # full update
-        book = get_object_or_404(Book, pk=pk)
-        serializer = BookSerializer(book, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def patch(self, request, pk):  # partial update
-        book = get_object_or_404(Book, pk=pk)
-        serializer = BookSerializer(book, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk):
-        book = get_object_or_404(Book, pk=pk)
-        book.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+   return Response(serializer.data)
 ``
 -----------------------------------------------------------------------------------------
 Doing the CRUD with Generic(less Code)
@@ -248,3 +195,40 @@ class UserSerializer(serializers.ModelSerializer):
     # 2. Implement the get_<field_name> method
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}"
+
+=================================================================================================
+ModelViewSet :- 
+ModelViewSet is a high-level class that gives you a complete set of CRUD endpoints (Create, Read, Update, Delete) for a 
+Django model in one place
+
+It combines the behavior of these mixins:
+ListModelMixin → GET /items/
+RetrieveModelMixin → GET /items/{id}/
+CreateModelMixin → POST /items/
+UpdateModelMixin → PUT/PATCH /items/{id}/
+DestroyModelMixin → DELETE /items/{id}/
+
+
+from rest_framework import serializers
+from .models import Book
+
+class BookSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Book
+        fields = "__all__"
+
+
+from rest_framework.filters import SearchFilter, OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
+
+class BookViewSet(ModelViewSet):
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
+    permission_classes = [IsAuthenticated]
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ["author"]
+    search_fields = ["title", "author"]
+    ordering_fields = ["created_at", "title"]
+    ordering = ["-created_at"]
+``
