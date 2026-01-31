@@ -232,3 +232,38 @@ class BookViewSet(ModelViewSet):
     ordering_fields = ["created_at", "title"]
     ordering = ["-created_at"]
 ``
+======================================================================================================
+Token Authentication
+In Django REST Framework (DRF) Token Authentication is a simple, built-in way to authenticate API requests using 
+a static token per user.  The client sends the token in the Authorization header, and DRF uses it to identify the user.
+
+✅ Best for: internal APIs, quick prototypes, or simple client-server apps
+⚠️ Not ideal for: high-security/public APIs (consider JWT/OAuth2 instead)
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Responce
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
+
+class ProfileView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({"user": request.user.username})
+
+TokenAuthentication in DRF is static:
+
+Tokens don’t expire by default
+If leaked, attacker can use it until revoked
+Rotating tokens requires custom logic
+
+✅ Best Practices
+
+Use HTTPS always
+Implement token rotation (custom)
+Consider JWT (short-lived access tokens + refresh tokens) for public APIs
+Store tokens securely in clients (avoid localStorage if possible in browsers)
+
+-------------------------------------------------------------------------------------------
