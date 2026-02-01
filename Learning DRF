@@ -267,3 +267,26 @@ Consider JWT (short-lived access tokens + refresh tokens) for public APIs
 Store tokens securely in clients (avoid localStorage if possible in browsers)
 
 -------------------------------------------------------------------------------------------
+Django Actions
+
+DRF, “Actions” usually means custom endpoints you add to a ViewSet using @action. 
+They let you create routes beyond the standard CRUD (list/retrieve/create/update/destroy)—for example: POST /users/{id}/reset_password/ or GET /orders/recent/.
+
+
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+
+class BookViewSet(ModelViewSet):
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
+
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
+    def my_books(self, request):
+        qs = Book.objects.filter(owner=request.user)
+        return Response(self.get_serializer(qs, many=True).data)
+
+    @action(detail=True, methods=["delete"], permission_classes=[IsAdminUser])
+    def hard_delete(self, request, pk=None):
+        book = self.get_object()
+        book.delete()
+        return Response(status=204)
+
